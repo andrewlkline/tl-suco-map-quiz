@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Timor-Leste Suco Map Quiz</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ===================== HOME SCREEN ===================== -->
+<section id="screen-home" class="screen active">
+  <div class="home-wrap">
+    <h1>Timor-Leste Suco Map Quiz</h1>
+    <p class="subtitle">Find every suco (village) in Timor-Leste. Choose a mode to start.</p>
+
+    <div class="answer-toggle" id="answer-toggle">
+      <button class="toggle-opt" id="toggle-click" data-mode="click">Click the map</button>
+      <button class="toggle-opt" id="toggle-type" data-mode="type">Type the names</button>
+    </div>
+
+    <div class="mode-cards">
+      <button class="mode-card" id="btn-country">
+        <span class="mode-card-title">Whole Country</span>
+        <span class="mode-card-desc">All 442 sucos across all 13 municipalities</span>
+      </button>
+      <button class="mode-card" id="btn-posts">
+        <span class="mode-card-title">Administrative Posts</span>
+        <span class="mode-card-desc">All 65 administrative posts, country-wide</span>
+      </button>
+      <button class="mode-card" id="btn-muni-picker">
+        <span class="mode-card-title">By Municipality</span>
+        <span class="mode-card-desc">Focus on the sucos of a single municipality</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ============= MUNICIPALITY PICKER SCREEN ============= -->
+<section id="screen-picker" class="screen">
+  <div class="picker-wrap">
+    <button class="btn-link" id="btn-picker-back">&larr; Back</button>
+    <h2>Choose a municipality</h2>
+    <div class="picker-body">
+      <div class="picker-map-wrap">
+        <svg id="picker-map"></svg>
+      </div>
+      <div class="picker-list" id="picker-list"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== GAME SCREEN ===================== -->
+<section id="screen-game" class="screen">
+  <div class="game-topbar">
+    <button class="btn-link" id="btn-game-quit">&larr; Quit</button>
+    <div class="game-prompt">
+      <div id="prompt-click" class="prompt-click">
+        <span class="prompt-label">Find:</span>
+        <span class="prompt-name" id="prompt-name">&mdash;</span>
+      </div>
+      <div id="prompt-type" class="prompt-type">
+        <span class="prompt-label" id="group-label">&mdash;</span>
+        <input id="type-input" class="type-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a suco name…" />
+      </div>
+    </div>
+    <div class="game-stats">
+      <span id="stat-progress">0 / 0</span>
+      <span id="stat-misses">0 misses</span>
+      <span id="stat-timer">0:00</span>
+    </div>
+    <div class="game-actions">
+      <button id="btn-skip" class="btn-secondary">Skip</button>
+      <button id="btn-zoom-reset" class="btn-secondary" title="Reset zoom">Reset View</button>
+    </div>
+  </div>
+  <div class="game-map-wrap">
+    <svg id="game-map"></svg>
+    <div id="toast" class="toast"></div>
+  </div>
+</section>
+
+<!-- ===================== END SCREEN ===================== -->
+<section id="screen-end" class="screen">
+  <div class="end-wrap">
+    <h2 id="end-title">Quiz complete!</h2>
+    <div class="end-stats">
+      <div class="end-stat"><span class="end-stat-num" id="end-found">0</span><span class="end-stat-label">Found</span></div>
+      <div class="end-stat"><span class="end-stat-num" id="end-accuracy">0%</span><span class="end-stat-label">First-try accuracy</span></div>
+      <div class="end-stat"><span class="end-stat-num" id="end-time">0:00</span><span class="end-stat-label">Time</span></div>
+    </div>
+    <div class="end-columns">
+      <div class="end-col">
+        <h3>Missed (<span id="end-missed-count">0</span>)</h3>
+        <ul id="end-missed-list" class="end-list"></ul>
+      </div>
+    </div>
+    <div class="end-buttons">
+      <button class="btn-primary" id="btn-play-again">Play Again</button>
+      <button class="btn-secondary" id="btn-end-home">Back to Menu</button>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
