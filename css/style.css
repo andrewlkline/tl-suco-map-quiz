@@ -32,6 +32,10 @@ h1, h2, h3 { margin: 0; }
 button {
   font-family: inherit;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .screen {
@@ -306,7 +310,14 @@ button {
   min-height: 0;
   background: #0c131b;
 }
-#game-map { width: 100%; height: 100%; display: block; }
+#game-map { width: 100%; height: 100%; display: block; touch-action: none; }
+#picker-map { touch-action: none; }
+
+.suco-shape, .muni-shape {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 
 .suco-shape {
   fill: var(--land);
