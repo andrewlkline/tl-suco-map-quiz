@@ -229,24 +229,33 @@ function levenshteinDistance(a, b) {
 }
 
 function fuzzyThreshold(len) {
-  if (len <= 4) return 0;
-  if (len <= 6) return 1;
-  if (len <= 9) return 2;
+  if (len <= 7) return 1;
+  if (len <= 11) return 2;
   return 3;
 }
 
+// Exact match only — used for live auto-accept while typing, where a
+// still-incomplete word could otherwise look like a fuzzy match to some
+// unrelated candidate before the player has finished typing it.
+function exactMatchInGroup(normInput, ids) {
+  return ids.find(id => normalizeName(featuresById[id].properties.name) === normInput) || null;
+}
+
 // Exact match first; falls back to a fuzzy match against the given group's
-// ids, but only when there's a single unambiguous closest candidate.
+// ids, but only when there's a single unambiguous closest candidate. Meant
+// for deliberate submission (Enter), not live keystroke-by-keystroke input.
+// Word spacing is stripped before the distance check so "Uai Oli" vs.
+// "Uaiolo" is judged purely on spelling, not on where the gap falls.
 function findMatchInGroup(normInput, ids) {
-  for (const id of ids) {
-    if (normalizeName(featuresById[id].properties.name) === normInput) return id;
-  }
+  const exact = exactMatchInGroup(normInput, ids);
+  if (exact) return exact;
+  const inputStripped = normInput.replace(/\s/g, "");
   let bestId = null, bestDist = Infinity, tieCount = 0;
   for (const id of ids) {
     const cand = normalizeName(featuresById[id].properties.name);
-    const threshold = fuzzyThreshold(Math.max(normInput.length, cand.length));
-    if (threshold === 0) continue;
-    const dist = levenshteinDistance(normInput, cand);
+    const candStripped = cand.replace(/\s/g, "");
+    const threshold = fuzzyThreshold(Math.max(inputStripped.length, candStripped.length));
+    const dist = levenshteinDistance(inputStripped, candStripped);
     if (dist <= threshold) {
       if (dist < bestDist) { bestDist = dist; bestId = id; tieCount = 1; }
       else if (dist === bestDist) tieCount++;
@@ -785,7 +794,7 @@ function wireUI() {
     const norm = normalizeName(typeInput.value);
     if (!norm) return;
     const grp = currentGroup();
-    const match = findMatchInGroup(norm, grp.ids);
+    const match = exactMatchInGroup(norm, grp.ids);
     if (match) markFound(match);
   });
   typeInput.addEventListener("keydown", (e) => {
