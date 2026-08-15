@@ -752,12 +752,35 @@ async function loadLeaderboardList() {
 }
 
 /* ============================================================
+   Color scheme (light / dark) toggle
+   ============================================================ */
+function setColorScheme(mode) {
+  if (mode === "dark") {
+    document.documentElement.setAttribute("data-theme", "dark");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+  localStorage.setItem("tlq_colorScheme", mode);
+  document.querySelectorAll(".theme-toggle-btn").forEach(btn => {
+    btn.textContent = mode === "dark" ? "☀ Light" : "🌙 Dark";
+  });
+}
+
+/* ============================================================
    Wiring
    ============================================================ */
 function wireUI() {
   setAnswerMode(currentAnswerMode);
   document.getElementById("toggle-click").addEventListener("click", () => setAnswerMode("click"));
   document.getElementById("toggle-type").addEventListener("click", () => setAnswerMode("type"));
+
+  setColorScheme(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
+  document.querySelectorAll(".theme-toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+      setColorScheme(current === "dark" ? "light" : "dark");
+    });
+  });
 
   document.getElementById("btn-easy").addEventListener("click", () => {
     startQuiz({

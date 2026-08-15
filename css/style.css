@@ -21,6 +21,28 @@
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* Dark mode — a warm brown-black variant, not a generic navy dashboard */
+[data-theme="dark"] {
+  --bg: #201812;
+  --panel: #2a1f17;
+  --panel-2: #35281c;
+  --border: #4e3a2a;
+  --text: #f3e9d8;
+  --text-dim: #b3a08c;
+  --accent: #d97a3a;
+  --accent-dim: #b5651d;
+  --accent-text: #201812;
+  --green: #5fae5a;
+  --red: #e0574a;
+  --land: #423422;
+  --land-stroke: #6b5640;
+  --land-hover: #5a4832;
+  --land-found: #4a7c3f;
+  --land-wrong: #b0453a;
+  --land-missed: #8a5030;
+  --boundary: #f0e6d0;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -29,6 +51,7 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
+  transition: background 0.2s, color 0.2s;
 }
 
 h1, h2, h3 { margin: 0; font-family: var(--font-serif); font-weight: 600; }
@@ -62,11 +85,17 @@ button {
   text-align: center;
   position: relative;
 }
-.home-leaderboard-link {
+.home-top-controls {
   position: absolute;
   top: 0;
   right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
   font-size: 0.9rem;
+}
+.home-top-controls .btn-link {
+  padding: 6px 4px;
 }
 .home-wrap h1 {
   font-size: 2.2rem;
@@ -378,6 +407,8 @@ button {
 }
 .toast.toast-bad { border-color: var(--red); color: #8a2f22; }
 .toast.toast-good { border-color: var(--green); color: #2f6b34; }
+[data-theme="dark"] .toast.toast-bad { color: #ff9a8c; }
+[data-theme="dark"] .toast.toast-good { color: #9fe097; }
 
 .map-context-badge {
   position: absolute;
@@ -392,6 +423,7 @@ button {
   pointer-events: none;
   display: none;
 }
+[data-theme="dark"] .map-context-badge { background: rgba(32, 24, 18, 0.92); }
 .map-context-badge.visible { display: block; }
 .map-context-badge strong { color: var(--text); }
 
