@@ -234,11 +234,24 @@ function fuzzyThreshold(len) {
   return 3;
 }
 
+// A few sucos/admin posts carry an official dual name joined by "/"
+// (e.g. "Barique/Natarbora", "Tapo/Memo") — either half is a fully
+// correct answer on its own, not just a fuzzy near-miss.
+const nameVariantsCache = {};
+function nameVariants(id) {
+  if (nameVariantsCache[id]) return nameVariantsCache[id];
+  const raw = featuresById[id].properties.name;
+  const parts = raw.includes("/") ? raw.split("/").map(p => p.trim()).filter(Boolean) : [];
+  const variants = [...new Set([normalizeName(raw), ...parts.map(normalizeName)])];
+  nameVariantsCache[id] = variants;
+  return variants;
+}
+
 // Exact match only — used for live auto-accept while typing, where a
 // still-incomplete word could otherwise look like a fuzzy match to some
 // unrelated candidate before the player has finished typing it.
 function exactMatchInGroup(normInput, ids) {
-  return ids.find(id => normalizeName(featuresById[id].properties.name) === normInput) || null;
+  return ids.find(id => nameVariants(id).includes(normInput)) || null;
 }
 
 // Exact match first; falls back to a fuzzy match against the given group's
@@ -252,13 +265,16 @@ function findMatchInGroup(normInput, ids) {
   const inputStripped = normInput.replace(/\s/g, "");
   let bestId = null, bestDist = Infinity, tieCount = 0;
   for (const id of ids) {
-    const cand = normalizeName(featuresById[id].properties.name);
-    const candStripped = cand.replace(/\s/g, "");
-    const threshold = fuzzyThreshold(Math.max(inputStripped.length, candStripped.length));
-    const dist = levenshteinDistance(inputStripped, candStripped);
-    if (dist <= threshold) {
-      if (dist < bestDist) { bestDist = dist; bestId = id; tieCount = 1; }
-      else if (dist === bestDist) tieCount++;
+    let candidateBest = Infinity;
+    for (const variant of nameVariants(id)) {
+      const candStripped = variant.replace(/\s/g, "");
+      const threshold = fuzzyThreshold(Math.max(inputStripped.length, candStripped.length));
+      const dist = levenshteinDistance(inputStripped, candStripped);
+      if (dist <= threshold && dist < candidateBest) candidateBest = dist;
+    }
+    if (candidateBest < Infinity) {
+      if (candidateBest < bestDist) { bestDist = candidateBest; bestId = id; tieCount = 1; }
+      else if (candidateBest === bestDist) tieCount++;
     }
   }
   return (bestId && tieCount === 1) ? bestId : null;
