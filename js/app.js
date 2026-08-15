@@ -176,6 +176,9 @@ function startMunicipalityQuiz(muniFeature) {
     groupBy: { idKey: "post_id", nameKey: "post_name" },
     forceGroup: true,
     groupUnitLabel: "Admin Post",
+    typePlaceholder: "Type a suco name…",
+    contextKey: "post_name",
+    contextLabel: "Admin Post",
     title: `${muniFeature.properties.name} sucos`,
   });
 }
@@ -200,8 +203,56 @@ function normalizeName(s) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/[-\u2013\u2014']/g, " ")
     .trim()
     .replace(/\s+/g, " ");
+}
+
+// Small edit-distance tolerance so close/alternate spellings (Vemasse/Vemase,
+// Gariuai/Fariuai, Uatuhaco/Uataco, Uai-/Wai- variants, etc.) still count.
+function levenshteinDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  let prev = new Array(n + 1);
+  let curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+
+function fuzzyThreshold(len) {
+  if (len <= 4) return 0;
+  if (len <= 6) return 1;
+  if (len <= 9) return 2;
+  return 3;
+}
+
+// Exact match first; falls back to a fuzzy match against the given group's
+// ids, but only when there's a single unambiguous closest candidate.
+function findMatchInGroup(normInput, ids) {
+  for (const id of ids) {
+    if (normalizeName(featuresById[id].properties.name) === normInput) return id;
+  }
+  let bestId = null, bestDist = Infinity, tieCount = 0;
+  for (const id of ids) {
+    const cand = normalizeName(featuresById[id].properties.name);
+    const threshold = fuzzyThreshold(Math.max(normInput.length, cand.length));
+    if (threshold === 0) continue;
+    const dist = levenshteinDistance(normInput, cand);
+    if (dist <= threshold) {
+      if (dist < bestDist) { bestDist = dist; bestId = id; tieCount = 1; }
+      else if (dist === bestDist) tieCount++;
+    }
+  }
+  return (bestId && tieCount === 1) ? bestId : null;
 }
 
 /* ============================================================
@@ -237,12 +288,15 @@ function buildGroups(features, groupBy) {
 
 function startQuiz(config) {
   lastQuizConfig = config;
-  const { features, boundaryFeatures, fitFeatures, groupBy, forceGroup, groupUnitLabel, title } = config;
+  const {
+    features, boundaryFeatures, fitFeatures, groupBy, forceGroup, noGroup, groupUnitLabel, title,
+    typePlaceholder, contextKey, contextLabel,
+  } = config;
   const disambigKey = groupBy ? groupBy.nameKey : null;
   const displayNames = buildDisplayNames(features, disambigKey);
   featuresById = Object.fromEntries(features.map(f => [f.properties.id, f]));
 
-  const useGrouping = !!forceGroup || currentAnswerMode === "type";
+  const useGrouping = !noGroup && (!!forceGroup || currentAnswerMode === "type");
 
   game = {
     title,
@@ -251,6 +305,9 @@ function startQuiz(config) {
     grouped: useGrouping,
     flatSkipStyle: !useGrouping,
     groupUnitLabel: groupUnitLabel || "group",
+    typePlaceholder: typePlaceholder || "Type a name…",
+    contextKey: contextKey || null,
+    contextLabel: contextLabel || "",
     deferredIds: new Set(),
     foundIds: new Set(),
     missedIds: new Set(),
@@ -275,6 +332,7 @@ function startQuiz(config) {
   d3.select("#game-map").classed("type-mode", game.answerMode === "type");
 
   document.getElementById("stat-misses").textContent = "0 misses";
+  document.getElementById("type-input").placeholder = game.typePlaceholder;
   updateProgressStat();
   refreshPromptDisplay();
 
@@ -307,6 +365,7 @@ function refreshPromptDisplay() {
   promptClick.classList.toggle("visible", !isType);
   promptType.classList.toggle("visible", isType);
 
+  const badge = document.getElementById("map-context-badge");
   if (isType) {
     const found = grp.total - grp.ids.length;
     const label = grp.label ? `${grp.label} — ${found}/${grp.total}` : `${found}/${grp.total}`;
@@ -314,9 +373,18 @@ function refreshPromptDisplay() {
     const input = document.getElementById("type-input");
     input.value = "";
     input.focus();
+    badge.classList.remove("visible");
   } else {
     const id = grp.ids[0];
     document.getElementById("prompt-name").textContent = game.displayNames[id] || "?";
+    if (game.contextKey) {
+      const ctx = featuresById[id].properties[game.contextKey];
+      badge.innerHTML = `${game.contextLabel}: <strong></strong>`;
+      badge.querySelector("strong").textContent = ctx;
+      badge.classList.add("visible");
+    } else {
+      badge.classList.remove("visible");
+    }
   }
 
   const skipBtn = document.getElementById("btn-skip");
@@ -400,7 +468,7 @@ function handleTypeSubmit() {
   const norm = normalizeName(input.value);
   if (!norm) return;
   const grp = currentGroup();
-  const match = grp.ids.find(id => normalizeName(featuresById[id].properties.name) === norm);
+  const match = findMatchInGroup(norm, grp.ids);
   if (match) {
     markFound(match);
   } else {
@@ -466,6 +534,41 @@ function skipCurrent() {
   }
 }
 
+function giveUp() {
+  if (!game || game.ended) return;
+  game.groupQueue.forEach(grp => {
+    grp.ids.forEach(id => {
+      game.missedIds.add(id);
+      game.foundIds.add(id);
+      const el = document.querySelector(`#game-map path[data-id="${id}"]`);
+      if (el) el.classList.add("missed-reveal");
+    });
+  });
+  game.groupQueue = [];
+  updateProgressStat();
+  endQuiz();
+}
+
+function pbStorageKey(title, answerMode) {
+  return `tlq_pb_${title}_${answerMode}`;
+}
+
+function loadPB(title, answerMode) {
+  try {
+    return JSON.parse(localStorage.getItem(pbStorageKey(title, answerMode)));
+  } catch {
+    return null;
+  }
+}
+
+function maybeSavePB(title, answerMode, run) {
+  const existing = loadPB(title, answerMode);
+  const better = !existing || run.accuracy > existing.accuracy ||
+    (run.accuracy === existing.accuracy && run.timeMs < existing.timeMs);
+  if (better) localStorage.setItem(pbStorageKey(title, answerMode), JSON.stringify(run));
+  return { better, best: better ? run : existing };
+}
+
 function endQuiz() {
   game.ended = true;
   clearInterval(game.timerHandle);
@@ -476,6 +579,14 @@ function endQuiz() {
   document.getElementById("end-found").textContent = `${game.foundIds.size} / ${game.total}`;
   document.getElementById("end-accuracy").textContent = `${accuracy}%`;
   document.getElementById("end-time").textContent = formatTime(elapsed);
+
+  const { better, best } = maybeSavePB(game.title, game.answerMode, { accuracy, timeMs: elapsed, date: Date.now() });
+  const pbEl = document.getElementById("end-personal-best");
+  if (better) {
+    pbEl.innerHTML = `<span class="pb-new">🏆 New personal best!</span> ${best.accuracy}% in ${formatTime(best.timeMs)}`;
+  } else {
+    pbEl.textContent = `Personal best: ${best.accuracy}% in ${formatTime(best.timeMs)}`;
+  }
 
   const list = document.getElementById("end-missed-list");
   list.innerHTML = "";
@@ -490,6 +601,8 @@ function endQuiz() {
     });
   document.getElementById("end-missed-count").textContent = game.missedIds.size;
 
+  setupLeaderboardSubmit(game.title, game.answerMode, accuracy, elapsed);
+
   showScreen("screen-end");
 }
 
@@ -497,6 +610,120 @@ function quitGame() {
   if (game) clearInterval(game.timerHandle);
   game = null;
   showScreen("screen-home");
+}
+
+function setupLeaderboardSubmit(title, answerMode, accuracy, timeMs) {
+  const submitWrap = document.getElementById("end-leaderboard-submit");
+  const nameInput = document.getElementById("end-name-input");
+  const btn = document.getElementById("btn-submit-score");
+  const status = document.getElementById("end-submit-status");
+  status.textContent = "";
+  status.className = "end-submit-status";
+
+  if (!Leaderboard.isAvailable()) {
+    submitWrap.style.display = "none";
+    return;
+  }
+  submitWrap.style.display = "";
+  btn.disabled = false;
+  nameInput.value = localStorage.getItem("tlq_playerName") || "";
+
+  btn.onclick = async () => {
+    const name = nameInput.value.trim();
+    if (!name) {
+      status.textContent = "Enter a name first";
+      status.className = "end-submit-status err";
+      return;
+    }
+    btn.disabled = true;
+    status.textContent = "Submitting…";
+    localStorage.setItem("tlq_playerName", name);
+    const res = await Leaderboard.submitScore({
+      name, modeKey: title, answerMode, accuracy, timeMs,
+      found: game.foundIds.size, total: game.total,
+    });
+    if (res.ok) {
+      status.textContent = "✓ Submitted!";
+      status.className = "end-submit-status ok";
+    } else {
+      status.textContent = "Couldn't submit — try again";
+      status.className = "end-submit-status err";
+      btn.disabled = false;
+    }
+  };
+}
+
+/* ============================================================
+   Leaderboard screen
+   ============================================================ */
+let leaderboardAnswerMode = "click";
+
+function populateLeaderboardModeSelect() {
+  const select = document.getElementById("leaderboard-mode-select");
+  select.innerHTML = "";
+  const fixed = ["Municipalities", "Whole Country", "Administrative Posts"];
+  const muniTitles = [...DATA.munis]
+    .map(f => `${f.properties.name} sucos`)
+    .sort((a, b) => a.localeCompare(b));
+  [...fixed, ...muniTitles].forEach(title => {
+    const opt = document.createElement("option");
+    opt.value = title;
+    opt.textContent = title;
+    select.appendChild(opt);
+  });
+}
+
+function setLeaderboardAnswerMode(mode) {
+  leaderboardAnswerMode = mode;
+  document.querySelectorAll("#leaderboard-answer-toggle .toggle-opt").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.mode === mode);
+  });
+  loadLeaderboardList();
+}
+
+function openLeaderboardScreen(prefillKey, prefillMode) {
+  showScreen("screen-leaderboard");
+  const select = document.getElementById("leaderboard-mode-select");
+  if (prefillKey) select.value = prefillKey;
+  setLeaderboardAnswerMode(prefillMode || leaderboardAnswerMode);
+}
+
+async function loadLeaderboardList() {
+  const listEl = document.getElementById("leaderboard-list");
+  const emptyEl = document.getElementById("leaderboard-empty");
+  const unavailableEl = document.getElementById("leaderboard-unavailable");
+  listEl.innerHTML = "";
+  emptyEl.classList.remove("visible");
+  unavailableEl.classList.remove("visible");
+
+  if (!Leaderboard.isAvailable()) {
+    unavailableEl.classList.add("visible");
+    return;
+  }
+
+  const modeKey = document.getElementById("leaderboard-mode-select").value;
+  const rows = await Leaderboard.fetchScores(modeKey, leaderboardAnswerMode, 20);
+  if (!rows.length) {
+    emptyEl.classList.add("visible");
+    return;
+  }
+  rows.forEach((r, i) => {
+    const li = document.createElement("li");
+    const rank = document.createElement("span");
+    rank.className = "lb-rank";
+    rank.textContent = `${i + 1}`;
+    const name = document.createElement("span");
+    name.className = "lb-name";
+    name.textContent = r.name;
+    const acc = document.createElement("span");
+    acc.className = "lb-accuracy";
+    acc.textContent = `${r.accuracy}%`;
+    const time = document.createElement("span");
+    time.className = "lb-time";
+    time.textContent = formatTime(r.timeMs);
+    li.append(rank, name, acc, time);
+    listEl.appendChild(li);
+  });
 }
 
 /* ============================================================
@@ -507,6 +734,15 @@ function wireUI() {
   document.getElementById("toggle-click").addEventListener("click", () => setAnswerMode("click"));
   document.getElementById("toggle-type").addEventListener("click", () => setAnswerMode("type"));
 
+  document.getElementById("btn-easy").addEventListener("click", () => {
+    startQuiz({
+      features: DATA.munis,
+      noGroup: true,
+      typePlaceholder: "Type a municipality…",
+      title: "Municipalities",
+    });
+  });
+
   document.getElementById("btn-country").addEventListener("click", () => {
     startQuiz({
       features: DATA.sucos,
@@ -514,6 +750,9 @@ function wireUI() {
       groupBy: { idKey: "post_id", nameKey: "post_name" },
       forceGroup: false,
       groupUnitLabel: "Admin Post",
+      typePlaceholder: "Type a suco name…",
+      contextKey: "post_name",
+      contextLabel: "Admin Post",
       title: "Whole Country",
     });
   });
@@ -525,6 +764,9 @@ function wireUI() {
       groupBy: { idKey: "muni_id", nameKey: "muni_name" },
       forceGroup: false,
       groupUnitLabel: "Municipality",
+      typePlaceholder: "Type an administrative post…",
+      contextKey: "muni_name",
+      contextLabel: "Municipality",
       title: "Administrative Posts",
     });
   });
@@ -533,6 +775,7 @@ function wireUI() {
   document.getElementById("btn-picker-back").addEventListener("click", () => showScreen("screen-home"));
 
   document.getElementById("btn-skip").addEventListener("click", skipCurrent);
+  document.getElementById("btn-give-up").addEventListener("click", giveUp);
   document.getElementById("btn-zoom-reset").addEventListener("click", () => gameMapCtx && resetZoom(gameMapCtx));
   document.getElementById("btn-game-quit").addEventListener("click", quitGame);
 
@@ -542,7 +785,7 @@ function wireUI() {
     const norm = normalizeName(typeInput.value);
     if (!norm) return;
     const grp = currentGroup();
-    const match = grp.ids.find(id => normalizeName(featuresById[id].properties.name) === norm);
+    const match = findMatchInGroup(norm, grp.ids);
     if (match) markFound(match);
   });
   typeInput.addEventListener("keydown", (e) => {
@@ -557,9 +800,20 @@ function wireUI() {
     startQuiz(lastQuizConfig);
   });
   document.getElementById("btn-end-home").addEventListener("click", () => showScreen("screen-home"));
+
+  document.getElementById("btn-open-leaderboard").addEventListener("click", () => openLeaderboardScreen());
+  document.getElementById("btn-view-leaderboard").addEventListener("click", () => {
+    openLeaderboardScreen(game ? game.title : null, game ? game.answerMode : null);
+  });
+  document.getElementById("btn-leaderboard-back").addEventListener("click", () => showScreen("screen-home"));
+  document.getElementById("leaderboard-mode-select").addEventListener("change", loadLeaderboardList);
+  document.querySelectorAll("#leaderboard-answer-toggle .toggle-opt").forEach(btn => {
+    btn.addEventListener("click", () => setLeaderboardAnswerMode(btn.dataset.mode));
+  });
 }
 
 (async function init() {
   await loadData();
+  populateLeaderboardModeSelect();
   wireUI();
 })();

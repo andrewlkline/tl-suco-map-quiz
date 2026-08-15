@@ -11,6 +11,7 @@
 <!-- ===================== HOME SCREEN ===================== -->
 <section id="screen-home" class="screen active">
   <div class="home-wrap">
+    <button class="btn-link home-leaderboard-link" id="btn-open-leaderboard">🏆 Leaderboard</button>
     <h1>Timor-Leste Suco Map Quiz</h1>
     <p class="subtitle">Find every suco (village) in Timor-Leste. Choose a mode to start.</p>
 
@@ -20,6 +21,10 @@
     </div>
 
     <div class="mode-cards">
+      <button class="mode-card" id="btn-easy">
+        <span class="mode-card-title">Easy: Municipalities</span>
+        <span class="mode-card-desc">Just the 13 municipalities &mdash; a good warm-up</span>
+      </button>
       <button class="mode-card" id="btn-country">
         <span class="mode-card-title">Whole Country</span>
         <span class="mode-card-desc">All 442 sucos across all 13 municipalities</span>
@@ -71,11 +76,13 @@
     </div>
     <div class="game-actions">
       <button id="btn-skip" class="btn-secondary">Skip</button>
+      <button id="btn-give-up" class="btn-secondary">Give Up</button>
       <button id="btn-zoom-reset" class="btn-secondary" title="Reset zoom">Reset View</button>
     </div>
   </div>
   <div class="game-map-wrap">
     <svg id="game-map"></svg>
+    <div id="map-context-badge" class="map-context-badge"></div>
     <div id="toast" class="toast"></div>
   </div>
 </section>
@@ -89,19 +96,50 @@
       <div class="end-stat"><span class="end-stat-num" id="end-accuracy">0%</span><span class="end-stat-label">First-try accuracy</span></div>
       <div class="end-stat"><span class="end-stat-num" id="end-time">0:00</span><span class="end-stat-label">Time</span></div>
     </div>
+    <div id="end-personal-best" class="end-personal-best"></div>
     <div class="end-columns">
       <div class="end-col">
         <h3>Missed (<span id="end-missed-count">0</span>)</h3>
         <ul id="end-missed-list" class="end-list"></ul>
       </div>
     </div>
+    <div class="end-leaderboard-submit" id="end-leaderboard-submit">
+      <input id="end-name-input" class="type-input" type="text" maxlength="24" placeholder="Your name…" />
+      <button class="btn-secondary" id="btn-submit-score">Submit to Leaderboard</button>
+      <span id="end-submit-status" class="end-submit-status"></span>
+    </div>
     <div class="end-buttons">
       <button class="btn-primary" id="btn-play-again">Play Again</button>
+      <button class="btn-secondary" id="btn-view-leaderboard">View Leaderboard</button>
       <button class="btn-secondary" id="btn-end-home">Back to Menu</button>
     </div>
   </div>
 </section>
 
+<!-- ===================== LEADERBOARD SCREEN ===================== -->
+<section id="screen-leaderboard" class="screen">
+  <div class="leaderboard-wrap">
+    <button class="btn-link" id="btn-leaderboard-back">&larr; Back</button>
+    <h2>Leaderboard</h2>
+    <div class="leaderboard-controls">
+      <select id="leaderboard-mode-select"></select>
+      <div class="leaderboard-answer-toggle" id="leaderboard-answer-toggle">
+        <button class="toggle-opt small" data-mode="click">Click</button>
+        <button class="toggle-opt small" data-mode="type">Type</button>
+      </div>
+    </div>
+    <div id="leaderboard-list-wrap">
+      <ol id="leaderboard-list" class="leaderboard-list"></ol>
+      <div id="leaderboard-empty" class="leaderboard-empty">No scores yet &mdash; be the first!</div>
+      <div id="leaderboard-unavailable" class="leaderboard-empty">Leaderboard isn't set up yet.</div>
+    </div>
+  </div>
+</section>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/leaderboard.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="js/app.js"></script>
 </body>
