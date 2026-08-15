@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /scores/{scoreId} {
+      allow read: if true;
+      allow create: if
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 24 &&
+        request.resource.data.modeKey is string &&
+        request.resource.data.modeKey.size() > 0 &&
+        request.resource.data.answerMode in ['click', 'type'] &&
+        request.resource.data.accuracy is number &&
+        request.resource.data.accuracy >= 0 &&
+        request.resource.data.accuracy <= 100 &&
+        request.resource.data.timeMs is number &&
+        request.resource.data.timeMs > 0 &&
+        request.resource.data.total is number &&
+        request.resource.data.total > 0 &&
+        request.resource.data.found is number;
+      allow update, delete: if false;
+    }
+  }
+}
