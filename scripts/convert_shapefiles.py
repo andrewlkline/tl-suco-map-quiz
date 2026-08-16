@@ -10,6 +10,20 @@ OUT = "data"
 
 SIMPLIFY_TOLERANCE = 0.0004  # degrees, ~40m at this latitude
 
+# Known misspellings in the source shapefile (not alternate spellings —
+# genuine errors), corrected here by pcode so the game displays and teaches
+# the right name. The old spelling still gets accepted when typed, via the
+# app's fuzzy-match leniency, so this doesn't break anything for players
+# who know the shapefile's version.
+NAME_CORRECTIONS = {
+    "TL030107": "Gariuai",   # shapefile has "Fariuai"
+    "TL030608": "Uatuhaco",  # shapefile has "Uataco"
+}
+
+
+def corrected_name(pcode, name):
+    return NAME_CORRECTIONS.get(pcode, name)
+
 
 def load(layer):
     sf = shapefile.Reader(f"{RAW}/{layer}")
@@ -48,7 +62,7 @@ def main():
     for rec, geom in admin1:
         props = {
             "id": rec["adm1_pcode"],
-            "name": rec["adm1_name"],
+            "name": corrected_name(rec["adm1_pcode"], rec["adm1_name"]),
         }
         muni_features.append(to_feature(geom, props))
     write_fc(f"{OUT}/municipalities.geojson", muni_features)
@@ -58,13 +72,14 @@ def main():
     post_features = []
     post_names = Counter()
     for rec, geom in admin2:
+        name = corrected_name(rec["adm2_pcode"], rec["adm2_name"])
         props = {
             "id": rec["adm2_pcode"],
-            "name": rec["adm2_name"],
+            "name": name,
             "muni_id": rec["adm1_pcode"],
-            "muni_name": rec["adm1_name"],
+            "muni_name": corrected_name(rec["adm1_pcode"], rec["adm1_name"]),
         }
-        post_names[rec["adm2_name"]] += 1
+        post_names[name] += 1
         post_features.append(to_feature(geom, props))
     write_fc(f"{OUT}/admin_posts.geojson", post_features)
     dupes = {k: v for k, v in post_names.items() if v > 1}
@@ -77,16 +92,17 @@ def main():
     suco_names_country = Counter()
     suco_names_by_muni = defaultdict(Counter)
     for rec, geom in admin3:
+        name = corrected_name(rec["adm3_pcode"], rec["adm3_name"])
         props = {
             "id": rec["adm3_pcode"],
-            "name": rec["adm3_name"],
+            "name": name,
             "post_id": rec["adm2_pcode"],
-            "post_name": rec["adm2_name"],
+            "post_name": corrected_name(rec["adm2_pcode"], rec["adm2_name"]),
             "muni_id": rec["adm1_pcode"],
-            "muni_name": rec["adm1_name"],
+            "muni_name": corrected_name(rec["adm1_pcode"], rec["adm1_name"]),
         }
-        suco_names_country[rec["adm3_name"]] += 1
-        suco_names_by_muni[rec["adm1_pcode"]][rec["adm3_name"]] += 1
+        suco_names_country[name] += 1
+        suco_names_by_muni[rec["adm1_pcode"]][name] += 1
         suco_features.append(to_feature(geom, props))
     write_fc(f"{OUT}/sucos.geojson", suco_features)
 
