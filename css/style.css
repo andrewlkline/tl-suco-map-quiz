@@ -169,6 +169,14 @@ button {
   font-size: 0.85rem;
 }
 
+.data-disclaimer {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  max-width: 560px;
+  margin: 28px auto 0;
+}
+
 .btn-link {
   background: none;
   border: none;
