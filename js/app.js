@@ -598,10 +598,11 @@ function endQuiz() {
   game.ended = true;
   clearInterval(game.timerHandle);
   const elapsed = Date.now() - game.startTime;
-  const accuracy = Math.round(((game.total - game.missedIds.size) / game.total) * 100);
+  const correctCount = game.total - game.missedIds.size;
+  const accuracy = Math.round((correctCount / game.total) * 100);
 
   document.getElementById("end-title").textContent = game.title ? `${game.title} — complete!` : "Quiz complete!";
-  document.getElementById("end-found").textContent = `${game.foundIds.size} / ${game.total}`;
+  document.getElementById("end-found").textContent = `${correctCount} / ${game.total}`;
   document.getElementById("end-accuracy").textContent = `${accuracy}%`;
   document.getElementById("end-time").textContent = formatTime(elapsed);
 
@@ -665,7 +666,7 @@ function setupLeaderboardSubmit(title, answerMode, accuracy, timeMs) {
     localStorage.setItem("tlq_playerName", name);
     const res = await Leaderboard.submitScore({
       name, modeKey: title, answerMode, accuracy, timeMs,
-      found: game.foundIds.size, total: game.total,
+      found: game.total - game.missedIds.size, total: game.total,
     });
     if (res.ok) {
       status.textContent = "✓ Submitted!";
