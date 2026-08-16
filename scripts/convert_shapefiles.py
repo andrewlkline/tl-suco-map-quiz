@@ -18,6 +18,7 @@ SIMPLIFY_TOLERANCE = 0.0004  # degrees, ~40m at this latitude
 NAME_CORRECTIONS = {
     "TL030107": "Gariuai",   # shapefile has "Fariuai"
     "TL030608": "Uatuhaco",  # shapefile has "Uataco"
+    "TL030604": "Uai Oli",   # shapefile has "Uaiolo"
 }
 
 
