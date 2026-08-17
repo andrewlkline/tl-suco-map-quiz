@@ -14,6 +14,7 @@
   --land-stroke: #b89f72;
   --land-hover: #cbb06a;
   --land-found: #5f8f52;
+  --land-found-retry: #cc9a2e;
   --land-wrong: #c0432f;
   --land-missed: #9c5a35;
   --boundary: #4e2a1a;
@@ -38,6 +39,7 @@
   --land-stroke: #6b5640;
   --land-hover: #5a4832;
   --land-found: #4a7c3f;
+  --land-found-retry: #d9a83f;
   --land-wrong: #b0453a;
   --land-missed: #8a5030;
   --boundary: #f0e6d0;
@@ -424,6 +426,11 @@ button {
   background: var(--land-found);
   border-color: var(--land-found);
 }
+.answer-row.found-retry {
+  color: #241a06;
+  background: var(--land-found-retry);
+  border-color: var(--land-found-retry);
+}
 .answer-row.missed {
   color: var(--accent-text);
   background: var(--land-missed);
@@ -447,6 +454,10 @@ button {
 }
 .suco-shape.found {
   fill: var(--land-found);
+  cursor: default;
+}
+.suco-shape.found-retry {
+  fill: var(--land-found-retry);
   cursor: default;
 }
 .suco-shape.wrong {

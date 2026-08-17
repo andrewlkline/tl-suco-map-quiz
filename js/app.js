@@ -493,11 +493,12 @@ function registerMiss() {
 // Marks `id` as correctly found, removes it from the active group,
 // and advances to the next group if the current one is now empty.
 function markFound(id) {
+  const status = game.missedIds.has(id) ? "found-retry" : "found";
   const el = document.querySelector(`#game-map path[data-id="${id}"]`);
-  if (el) el.classList.add("found");
+  if (el) el.classList.add(status);
   game.foundIds.add(id);
   updateProgressStat();
-  fillAnswerRow(id, "found");
+  fillAnswerRow(id, status);
 
   const grp = currentGroup();
   const idx = grp.ids.indexOf(id);
@@ -530,7 +531,6 @@ function handleMapClick(event, d) {
   const shapeEl = event.currentTarget;
 
   if (id === targetId) {
-    shapeEl.classList.add("found");
     markFound(id);
   } else {
     game.missedIds.add(targetId);
