@@ -311,6 +311,57 @@ function buildGroups(features, groupBy) {
   return shuffle(groups);
 }
 
+// Builds the Jetpunk-style answers checklist: every target in the quiz,
+// grouped and alphabetized for easy scanning, starting blank and filling
+// in as each one is resolved (see fillAnswerRow).
+function buildAnswersPanel(features, groupBy) {
+  const panelEl = document.getElementById("answers-list");
+  panelEl.innerHTML = "";
+
+  let groups;
+  if (groupBy) {
+    const byKey = {};
+    features.forEach(f => {
+      const key = f.properties[groupBy.idKey];
+      const label = f.properties[groupBy.nameKey];
+      (byKey[key] ??= { label, items: [] }).items.push(f);
+    });
+    groups = Object.values(byKey);
+    groups.forEach(g => g.items.sort((a, b) => a.properties.name.localeCompare(b.properties.name)));
+    groups.sort((a, b) => a.label.localeCompare(b.label));
+  } else {
+    groups = [{ label: null, items: [...features].sort((a, b) => a.properties.name.localeCompare(b.properties.name)) }];
+  }
+
+  groups.forEach(g => {
+    const groupEl = document.createElement("div");
+    groupEl.className = "answers-group";
+    if (g.label) {
+      const labelEl = document.createElement("div");
+      labelEl.className = "answers-group-label";
+      labelEl.textContent = g.label;
+      groupEl.appendChild(labelEl);
+    }
+    const itemsEl = document.createElement("div");
+    itemsEl.className = "answers-items";
+    g.items.forEach(f => {
+      const row = document.createElement("div");
+      row.className = "answer-row";
+      row.dataset.id = f.properties.id;
+      itemsEl.appendChild(row);
+    });
+    groupEl.appendChild(itemsEl);
+    panelEl.appendChild(groupEl);
+  });
+}
+
+function fillAnswerRow(id, status) {
+  const row = document.querySelector(`.answer-row[data-id="${id}"]`);
+  if (!row) return;
+  row.textContent = game.displayNames[id] || featuresById[id].properties.name;
+  row.classList.add(status);
+}
+
 function startQuiz(config) {
   lastQuizConfig = config;
   const {
@@ -344,6 +395,7 @@ function startQuiz(config) {
     ended: false,
   };
 
+  buildAnswersPanel(features, groupBy);
   showScreen("screen-game");
 
   gameMapCtx = renderMap({
@@ -445,6 +497,7 @@ function markFound(id) {
   if (el) el.classList.add("found");
   game.foundIds.add(id);
   updateProgressStat();
+  fillAnswerRow(id, "found");
 
   const grp = currentGroup();
   const idx = grp.ids.indexOf(id);
@@ -512,6 +565,7 @@ function skipFlat() {
   game.foundIds.add(id);
   const el = document.querySelector(`#game-map path[data-id="${id}"]`);
   if (el) el.classList.add("missed-reveal");
+  fillAnswerRow(id, "missed");
   updateProgressStat();
   showToast(`Skipped — that was ${game.displayNames[id]}`, "bad");
   if (grp.ids.length === 0) {
@@ -531,6 +585,7 @@ function skipGroup() {
       game.foundIds.add(id);
       const el = document.querySelector(`#game-map path[data-id="${id}"]`);
       if (el) el.classList.add("missed-reveal");
+      fillAnswerRow(id, "missed");
     } else {
       game.deferredIds.add(id);
       toDefer.push(id);
@@ -567,6 +622,7 @@ function giveUp() {
       game.foundIds.add(id);
       const el = document.querySelector(`#game-map path[data-id="${id}"]`);
       if (el) el.classList.add("missed-reveal");
+      fillAnswerRow(id, "missed");
     });
   });
   game.groupQueue = [];

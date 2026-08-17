@@ -353,14 +353,82 @@ button {
   display: flex;
   gap: 8px;
 }
-.game-map-wrap {
+.game-body {
   flex: 1;
+  display: flex;
+  min-height: 0;
+}
+@media (max-width: 800px) {
+  .game-body { flex-direction: column; }
+}
+
+.game-map-wrap {
+  flex: 2;
   position: relative;
   min-height: 0;
   background: var(--bg);
 }
+@media (max-width: 800px) {
+  .game-map-wrap { flex: 1 1 55%; }
+}
 #game-map { width: 100%; height: 100%; display: block; touch-action: none; }
 #picker-map { touch-action: none; }
+
+.answers-panel {
+  flex: 1;
+  min-width: 220px;
+  max-width: 360px;
+  overflow-y: auto;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  padding: 14px 16px;
+}
+@media (max-width: 800px) {
+  .answers-panel {
+    max-width: none;
+    flex: 1 1 45%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}
+
+.answers-group { margin-bottom: 14px; }
+.answers-group-label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.answers-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 5px;
+}
+.answer-row {
+  min-height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  color: transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.answer-row.found {
+  color: var(--accent-text);
+  background: var(--land-found);
+  border-color: var(--land-found);
+}
+.answer-row.missed {
+  color: var(--accent-text);
+  background: var(--land-missed);
+  border-color: var(--land-missed);
+}
 
 .suco-shape, .muni-shape {
   -webkit-user-select: none;
