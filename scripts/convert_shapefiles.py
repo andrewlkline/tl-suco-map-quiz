@@ -19,6 +19,7 @@ NAME_CORRECTIONS = {
     "TL030107": "Gariuai",   # shapefile has "Fariuai"
     "TL030608": "Uatuhaco",  # shapefile has "Uataco"
     "TL030604": "Uai Oli",   # shapefile has "Uaiolo"
+    "TL0503": "Fohorem",     # shapefile has "Forohem"
 }
 
 

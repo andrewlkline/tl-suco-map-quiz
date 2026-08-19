@@ -229,9 +229,21 @@ function levenshteinDistance(a, b) {
 }
 
 function fuzzyThreshold(len) {
-  if (len <= 7) return 1;
   if (len <= 11) return 2;
   return 3;
+}
+
+// Systematic Tetum/Portuguese-influenced spelling variation, treated as
+// fully equivalent (not just "close enough"): c/k interchangeable, ua/wa
+// interchangeable, u/o after a consonant interchangeable, and hyphen/space/
+// no-space interchangeable. Collapses a normalized name down to one key so
+// e.g. "Uatocarbau", "Watukarbo", and "Uato Karbau" all compare equal.
+function canonicalKey(normalizedName) {
+  let k = normalizedName.replace(/\s+/g, "");
+  k = k.replace(/c/g, "k");
+  k = k.replace(/wa/g, "ua");
+  k = k.replace(/([bcdfghjklmnpqrstvwxyz])o/g, "$1u");
+  return k;
 }
 
 // A few sucos/admin posts carry an official dual name joined by "/"
@@ -242,34 +254,47 @@ function nameVariants(id) {
   if (nameVariantsCache[id]) return nameVariantsCache[id];
   const raw = featuresById[id].properties.name;
   const parts = raw.includes("/") ? raw.split("/").map(p => p.trim()).filter(Boolean) : [];
-  const variants = [...new Set([normalizeName(raw), ...parts.map(normalizeName)])];
-  nameVariantsCache[id] = variants;
-  return variants;
+  const normVariants = [...new Set([normalizeName(raw), ...parts.map(normalizeName)])];
+  const result = normVariants.map(v => ({ norm: v, key: canonicalKey(v) }));
+  nameVariantsCache[id] = result;
+  return result;
 }
 
 // Exact match only — used for live auto-accept while typing, where a
 // still-incomplete word could otherwise look like a fuzzy match to some
-// unrelated candidate before the player has finished typing it.
+// unrelated candidate before the player has finished typing it. Checks
+// both literal equality and the canonical-spelling-rules key, so accepted
+// systematic variants (see canonicalKey) auto-accept just as instantly as
+// the exact shapefile spelling — but only when the match is unambiguous.
 function exactMatchInGroup(normInput, ids) {
-  return ids.find(id => nameVariants(id).includes(normInput)) || null;
+  const inputKey = canonicalKey(normInput);
+  let match = null, tieCount = 0;
+  for (const id of ids) {
+    const variants = nameVariants(id);
+    if (variants.some(v => v.norm === normInput)) return id; // literal match wins outright
+    if (variants.some(v => v.key === inputKey)) {
+      if (!match) { match = id; tieCount = 1; }
+      else if (match !== id) tieCount++;
+    }
+  }
+  return tieCount === 1 ? match : null;
 }
 
-// Exact match first; falls back to a fuzzy match against the given group's
-// ids, but only when there's a single unambiguous closest candidate. Meant
-// for deliberate submission (Enter), not live keystroke-by-keystroke input.
-// Word spacing is stripped before the distance check so "Uai Oli" vs.
-// "Uaiolo" is judged purely on spelling, not on where the gap falls.
+// Exact (incl. canonical-spelling-rules) match first; falls back to a fuzzy
+// match against the given group's ids, but only when there's a single
+// unambiguous closest candidate. Meant for deliberate submission (Enter),
+// not live keystroke-by-keystroke input. Fuzzy distance is computed on top
+// of the canonical key, so genuine typos stack with the spelling rules.
 function findMatchInGroup(normInput, ids) {
   const exact = exactMatchInGroup(normInput, ids);
   if (exact) return exact;
-  const inputStripped = normInput.replace(/\s/g, "");
+  const inputKey = canonicalKey(normInput);
   let bestId = null, bestDist = Infinity, tieCount = 0;
   for (const id of ids) {
     let candidateBest = Infinity;
     for (const variant of nameVariants(id)) {
-      const candStripped = variant.replace(/\s/g, "");
-      const threshold = fuzzyThreshold(Math.max(inputStripped.length, candStripped.length));
-      const dist = levenshteinDistance(inputStripped, candStripped);
+      const threshold = fuzzyThreshold(Math.max(inputKey.length, variant.key.length));
+      const dist = levenshteinDistance(inputKey, variant.key);
       if (dist <= threshold && dist < candidateBest) candidateBest = dist;
     }
     if (candidateBest < Infinity) {
