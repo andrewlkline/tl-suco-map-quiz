@@ -21,36 +21,41 @@
   <div class="home-wrap">
     <div class="home-top-controls">
       <button class="btn-link theme-toggle-btn" id="btn-theme-toggle-home"></button>
-      <button class="btn-link" id="btn-open-leaderboard">🏆 Leaderboard</button>
+      <div class="lang-toggle">
+        <button class="toggle-opt small lang-toggle-btn" data-lang="en">EN</button>
+        <button class="toggle-opt small lang-toggle-btn" data-lang="pt">PT</button>
+        <button class="toggle-opt small lang-toggle-btn" data-lang="tet">TET</button>
+      </div>
+      <button class="btn-link" id="btn-open-leaderboard" data-i18n="leaderboardLink">🏆 Leaderboard</button>
     </div>
-    <h1>Timor-Leste Suco Map Quiz</h1>
-    <p class="subtitle">Find every suco (village) in Timor-Leste. Choose a mode to start.</p>
+    <h1 data-i18n="pageTitle">Timor-Leste Suco Map Quiz</h1>
+    <p class="subtitle" data-i18n="subtitle">Find every suco (village) in Timor-Leste. Choose a mode to start.</p>
 
     <div class="answer-toggle" id="answer-toggle">
-      <button class="toggle-opt" id="toggle-click" data-mode="click">Click the map</button>
-      <button class="toggle-opt" id="toggle-type" data-mode="type">Type the names</button>
+      <button class="toggle-opt" id="toggle-click" data-mode="click" data-i18n="toggleClick">Click the map</button>
+      <button class="toggle-opt" id="toggle-type" data-mode="type" data-i18n="toggleType">Type the names</button>
     </div>
 
     <div class="mode-cards">
       <button class="mode-card" id="btn-easy">
-        <span class="mode-card-title">Easy: Municipalities</span>
-        <span class="mode-card-desc">Just the 13 municipalities &mdash; a good warm-up</span>
+        <span class="mode-card-title" data-i18n="modeEasyTitle">Easy: Municipalities</span>
+        <span class="mode-card-desc" data-i18n="modeEasyDesc">Just the 13 municipalities &mdash; a good warm-up</span>
       </button>
       <button class="mode-card" id="btn-country">
-        <span class="mode-card-title">Whole Country</span>
-        <span class="mode-card-desc">All 442 sucos across all 13 municipalities</span>
+        <span class="mode-card-title" data-i18n="modeCountryTitle">Whole Country</span>
+        <span class="mode-card-desc" data-i18n="modeCountryDesc">All 442 sucos across all 13 municipalities</span>
       </button>
       <button class="mode-card" id="btn-posts">
-        <span class="mode-card-title">Administrative Posts</span>
-        <span class="mode-card-desc">All 65 administrative posts, country-wide</span>
+        <span class="mode-card-title" data-i18n="modePostsTitle">Administrative Posts</span>
+        <span class="mode-card-desc" data-i18n="modePostsDesc">All 65 administrative posts, country-wide</span>
       </button>
       <button class="mode-card" id="btn-muni-picker">
-        <span class="mode-card-title">By Municipality</span>
-        <span class="mode-card-desc">Focus on the sucos of a single municipality</span>
+        <span class="mode-card-title" data-i18n="modeMuniTitle">By Municipality</span>
+        <span class="mode-card-desc" data-i18n="modeMuniDesc">Focus on the sucos of a single municipality</span>
       </button>
     </div>
 
-    <p class="data-disclaimer">
+    <p class="data-disclaimer" data-i18n="disclaimer">
       This quiz is based on a pre-2022 administrative boundary dataset. It predates two later
       changes: Atauro becoming its own municipality (previously part of Dili) in January 2022,
       and Baucau's Quelicai Administrative Post splitting into Quelicai Antigo and Matebian in
@@ -62,8 +67,8 @@
 <!-- ============= MUNICIPALITY PICKER SCREEN ============= -->
 <section id="screen-picker" class="screen">
   <div class="picker-wrap">
-    <button class="btn-link" id="btn-picker-back">&larr; Back</button>
-    <h2>Choose a municipality</h2>
+    <button class="btn-link" id="btn-picker-back">&larr; <span data-i18n="back">Back</span></button>
+    <h2 data-i18n="chooseMunicipality">Choose a municipality</h2>
     <div class="picker-body">
       <div class="picker-map-wrap">
         <svg id="picker-map"></svg>
@@ -76,10 +81,10 @@
 <!-- ===================== GAME SCREEN ===================== -->
 <section id="screen-game" class="screen">
   <div class="game-topbar">
-    <button class="btn-link" id="btn-game-quit">&larr; Quit</button>
+    <button class="btn-link" id="btn-game-quit">&larr; <span data-i18n="quit">Quit</span></button>
     <div class="game-prompt">
       <div id="prompt-click" class="prompt-click">
-        <span class="prompt-label">Find:</span>
+        <span class="prompt-label" data-i18n="find">Find:</span>
         <span class="prompt-name" id="prompt-name">&mdash;</span>
       </div>
       <div id="prompt-type" class="prompt-type">
@@ -93,10 +98,15 @@
       <span id="stat-timer">0:00</span>
     </div>
     <div class="game-actions">
-      <button id="btn-skip" class="btn-secondary">Skip</button>
-      <button id="btn-give-up" class="btn-secondary">Give Up</button>
-      <button id="btn-zoom-reset" class="btn-secondary" title="Reset zoom">Reset View</button>
+      <button id="btn-skip" class="btn-secondary" data-i18n="skip">Skip</button>
+      <button id="btn-give-up" class="btn-secondary" data-i18n="giveUp">Give Up</button>
+      <button id="btn-zoom-reset" class="btn-secondary" data-i18n="resetView" data-i18n-title="resetZoomTooltip" title="Reset zoom">Reset View</button>
       <button class="btn-secondary theme-toggle-btn" id="btn-theme-toggle-game"></button>
+      <div class="lang-toggle">
+        <button class="toggle-opt small lang-toggle-btn" data-lang="en">EN</button>
+        <button class="toggle-opt small lang-toggle-btn" data-lang="pt">PT</button>
+        <button class="toggle-opt small lang-toggle-btn" data-lang="tet">TET</button>
+      </div>
     </div>
   </div>
   <div class="game-body">
@@ -116,26 +126,26 @@
   <div class="end-wrap">
     <h2 id="end-title">Quiz complete!</h2>
     <div class="end-stats">
-      <div class="end-stat"><span class="end-stat-num" id="end-found">0</span><span class="end-stat-label">Correct</span></div>
-      <div class="end-stat"><span class="end-stat-num" id="end-accuracy">0%</span><span class="end-stat-label">First-try accuracy</span></div>
-      <div class="end-stat"><span class="end-stat-num" id="end-time">0:00</span><span class="end-stat-label">Time</span></div>
+      <div class="end-stat"><span class="end-stat-num" id="end-found">0</span><span class="end-stat-label" data-i18n="statCorrect">Correct</span></div>
+      <div class="end-stat"><span class="end-stat-num" id="end-accuracy">0%</span><span class="end-stat-label" data-i18n="statAccuracy">First-try accuracy</span></div>
+      <div class="end-stat"><span class="end-stat-num" id="end-time">0:00</span><span class="end-stat-label" data-i18n="statTime">Time</span></div>
     </div>
     <div id="end-personal-best" class="end-personal-best"></div>
     <div class="end-columns">
       <div class="end-col">
-        <h3>Missed (<span id="end-missed-count">0</span>)</h3>
+        <h3><span data-i18n="missedHeading">Missed</span> (<span id="end-missed-count">0</span>)</h3>
         <ul id="end-missed-list" class="end-list"></ul>
       </div>
     </div>
     <div class="end-leaderboard-submit" id="end-leaderboard-submit">
-      <input id="end-name-input" class="type-input" type="text" maxlength="24" placeholder="Your name…" />
-      <button class="btn-secondary" id="btn-submit-score">Submit to Leaderboard</button>
+      <input id="end-name-input" class="type-input" type="text" maxlength="24" placeholder="Your name…" data-i18n-placeholder="yourNamePlaceholder" />
+      <button class="btn-secondary" id="btn-submit-score" data-i18n="submitToLeaderboard">Submit to Leaderboard</button>
       <span id="end-submit-status" class="end-submit-status"></span>
     </div>
     <div class="end-buttons">
-      <button class="btn-primary" id="btn-play-again">Play Again</button>
-      <button class="btn-secondary" id="btn-view-leaderboard">View Leaderboard</button>
-      <button class="btn-secondary" id="btn-end-home">Back to Menu</button>
+      <button class="btn-primary" id="btn-play-again" data-i18n="playAgain">Play Again</button>
+      <button class="btn-secondary" id="btn-view-leaderboard" data-i18n="viewLeaderboard">View Leaderboard</button>
+      <button class="btn-secondary" id="btn-end-home" data-i18n="backToMenu">Back to Menu</button>
     </div>
   </div>
 </section>
@@ -143,19 +153,19 @@
 <!-- ===================== LEADERBOARD SCREEN ===================== -->
 <section id="screen-leaderboard" class="screen">
   <div class="leaderboard-wrap">
-    <button class="btn-link" id="btn-leaderboard-back">&larr; Back</button>
-    <h2>Leaderboard</h2>
+    <button class="btn-link" id="btn-leaderboard-back">&larr; <span data-i18n="back">Back</span></button>
+    <h2 data-i18n="leaderboardHeading">Leaderboard</h2>
     <div class="leaderboard-controls">
       <select id="leaderboard-mode-select"></select>
       <div class="leaderboard-answer-toggle" id="leaderboard-answer-toggle">
-        <button class="toggle-opt small" data-mode="click">Click</button>
-        <button class="toggle-opt small" data-mode="type">Type</button>
+        <button class="toggle-opt small" data-mode="click" data-i18n="lbToggleClick">Click</button>
+        <button class="toggle-opt small" data-mode="type" data-i18n="lbToggleType">Type</button>
       </div>
     </div>
     <div id="leaderboard-list-wrap">
       <ol id="leaderboard-list" class="leaderboard-list"></ol>
-      <div id="leaderboard-empty" class="leaderboard-empty">No scores yet &mdash; be the first!</div>
-      <div id="leaderboard-unavailable" class="leaderboard-empty">Leaderboard isn't set up yet.</div>
+      <div id="leaderboard-empty" class="leaderboard-empty" data-i18n="noScoresYet">No scores yet &mdash; be the first!</div>
+      <div id="leaderboard-unavailable" class="leaderboard-empty" data-i18n="leaderboardNotSetUp">Leaderboard isn't set up yet.</div>
     </div>
   </div>
 </section>
@@ -164,6 +174,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 <script src="js/leaderboard.js"></script>
+<script src="js/i18n.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="js/app.js"></script>
 </body>

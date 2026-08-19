@@ -71,6 +71,7 @@ button {
   display: none;
   height: 100vh;
   width: 100vw;
+  overflow-y: auto;
 }
 .screen.active {
   display: flex;
@@ -78,7 +79,7 @@ button {
 
 /* ---------- Home ---------- */
 #screen-home {
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
 }
 .home-wrap {
@@ -354,6 +355,7 @@ button {
 .game-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .game-body {
   flex: 1;
@@ -516,7 +518,7 @@ button {
 
 /* ---------- End screen ---------- */
 #screen-end {
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
 }
 .end-wrap {
@@ -571,7 +573,7 @@ button {
   color: var(--red);
 }
 .end-list.empty::before {
-  content: "None — perfect run!";
+  content: attr(data-empty-text);
   color: var(--green);
 }
 .end-buttons {
@@ -614,7 +616,7 @@ button {
 
 /* ---------- Leaderboard ---------- */
 #screen-leaderboard {
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
 }
 .leaderboard-wrap {
@@ -645,6 +647,14 @@ button {
 .leaderboard-answer-toggle {
   display: inline-flex;
   background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 3px;
+}
+.lang-toggle {
+  display: inline-flex;
+  background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 3px;

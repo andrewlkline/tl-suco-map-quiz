@@ -175,10 +175,10 @@ function startMunicipalityQuiz(muniFeature) {
     fitFeatures: [muniFeature],
     groupBy: { idKey: "post_id", nameKey: "post_name" },
     forceGroup: true,
-    groupUnitLabel: "Admin Post",
-    typePlaceholder: "Type a suco name…",
+    unitKey: "adminPost",
+    placeholderKey: "suco",
     contextKey: "post_name",
-    contextLabel: "Admin Post",
+    contextLabelKey: "adminPost",
     title: `${muniFeature.properties.name} sucos`,
   });
 }
@@ -387,11 +387,17 @@ function fillAnswerRow(id, status) {
   row.classList.add(status);
 }
 
+// Maps the semantic keys carried on quiz configs to translation keys.
+// Kept separate from the (stable, untranslated) modeKey used for
+// leaderboard/personal-best storage — see displayModeTitle().
+const UNIT_LABEL_KEYS = { adminPost: "unitAdminPost", municipality: "unitMunicipality" };
+const PLACEHOLDER_KEYS = { suco: "placeholderSuco", post: "placeholderPost", muni: "placeholderMuni" };
+
 function startQuiz(config) {
   lastQuizConfig = config;
   const {
-    features, boundaryFeatures, fitFeatures, groupBy, forceGroup, noGroup, groupUnitLabel, title,
-    typePlaceholder, contextKey, contextLabel,
+    features, boundaryFeatures, fitFeatures, groupBy, forceGroup, noGroup, unitKey, title,
+    placeholderKey, contextKey, contextLabelKey,
   } = config;
   const disambigKey = groupBy ? groupBy.nameKey : null;
   const displayNames = buildDisplayNames(features, disambigKey);
@@ -405,10 +411,10 @@ function startQuiz(config) {
     groupQueue: useGrouping ? buildGroups(features, groupBy) : buildGroups(features, null),
     grouped: useGrouping,
     flatSkipStyle: !useGrouping,
-    groupUnitLabel: groupUnitLabel || "group",
-    typePlaceholder: typePlaceholder || "Type a name…",
+    unitKey: unitKey || null,
+    placeholderKey: placeholderKey || null,
     contextKey: contextKey || null,
-    contextLabel: contextLabel || "",
+    contextLabelKey: contextLabelKey || null,
     deferredIds: new Set(),
     foundIds: new Set(),
     missedIds: new Set(),
@@ -433,8 +439,7 @@ function startQuiz(config) {
   });
   d3.select("#game-map").classed("type-mode", game.answerMode === "type");
 
-  document.getElementById("stat-misses").textContent = "0 misses";
-  document.getElementById("type-input").placeholder = game.typePlaceholder;
+  document.getElementById("stat-misses").textContent = tCount("missCount", 0);
   updateProgressStat();
   refreshPromptDisplay();
 
@@ -468,11 +473,12 @@ function refreshPromptDisplay() {
   promptType.classList.toggle("visible", isType);
 
   const badge = document.getElementById("map-context-badge");
+  const input = document.getElementById("type-input");
+  input.placeholder = t(PLACEHOLDER_KEYS[game.placeholderKey] || "placeholderSuco");
   if (isType) {
     const found = grp.total - grp.ids.length;
     const label = grp.label ? `${grp.label} — ${found}/${grp.total}` : `${found}/${grp.total}`;
     document.getElementById("group-label").textContent = label;
-    const input = document.getElementById("type-input");
     input.value = "";
     input.focus();
     badge.classList.remove("visible");
@@ -481,7 +487,7 @@ function refreshPromptDisplay() {
     document.getElementById("prompt-name").textContent = game.displayNames[id] || "?";
     if (game.contextKey) {
       const ctx = featuresById[id].properties[game.contextKey];
-      badge.innerHTML = `${game.contextLabel}: <strong></strong>`;
+      badge.innerHTML = `${t(UNIT_LABEL_KEYS[game.contextLabelKey])}: <strong></strong>`;
       badge.querySelector("strong").textContent = ctx;
       badge.classList.add("visible");
     } else {
@@ -490,7 +496,7 @@ function refreshPromptDisplay() {
   }
 
   const skipBtn = document.getElementById("btn-skip");
-  skipBtn.textContent = game.flatSkipStyle ? "Skip" : `Skip rest of ${game.groupUnitLabel}`;
+  skipBtn.textContent = game.flatSkipStyle ? t("skip") : t("skipRestOf", { unit: t(UNIT_LABEL_KEYS[game.unitKey]) });
 }
 
 function updateProgressStat() {
@@ -512,7 +518,7 @@ function showToast(msg, kind) {
 
 function registerMiss() {
   game.missClicks++;
-  document.getElementById("stat-misses").textContent = `${game.missClicks} ${game.missClicks === 1 ? "miss" : "misses"}`;
+  document.getElementById("stat-misses").textContent = tCount("missCount", game.missClicks);
 }
 
 // Marks `id` as correctly found, removes it from the active group,
@@ -537,12 +543,12 @@ function markFound(id) {
       return;
     }
     if (game.grouped && completedLabel) {
-      showToast(`${completedLabel} complete! Next: ${game.groupQueue[0].label}`, "good");
+      showToast(t("toastGroupComplete", { group: completedLabel, next: game.groupQueue[0].label }), "good");
     } else {
-      showToast(`Correct — ${game.displayNames[id]}`, "good");
+      showToast(t("toastCorrect", { name: game.displayNames[id] }), "good");
     }
   } else {
-    showToast(`Correct — ${game.displayNames[id]}`, "good");
+    showToast(t("toastCorrect", { name: game.displayNames[id] }), "good");
   }
   refreshPromptDisplay();
 }
@@ -562,7 +568,7 @@ function handleMapClick(event, d) {
     registerMiss();
     shapeEl.classList.add("wrong");
     setTimeout(() => shapeEl.classList.remove("wrong"), 350);
-    showToast(`Not quite — try again`, "bad");
+    showToast(t("toastWrongTryAgain"), "bad");
   }
 }
 
@@ -592,7 +598,7 @@ function skipFlat() {
   if (el) el.classList.add("missed-reveal");
   fillAnswerRow(id, "missed");
   updateProgressStat();
-  showToast(`Skipped — that was ${game.displayNames[id]}`, "bad");
+  showToast(t("toastSkipped", { name: game.displayNames[id] }), "bad");
   if (grp.ids.length === 0) {
     endQuiz();
   } else {
@@ -622,7 +628,7 @@ function skipGroup() {
     game.groupQueue.push({ label, ids: shuffle(toDefer), total: toDefer.length });
   }
   updateProgressStat();
-  showToast(`Skipped rest of ${label} — saved for later`, "bad");
+  showToast(t("toastSkippedGroup", { label }), "bad");
   if (game.groupQueue.length === 0) {
     endQuiz();
   } else {
@@ -682,7 +688,9 @@ function endQuiz() {
   const correctCount = game.total - game.missedIds.size;
   const accuracy = Math.round((correctCount / game.total) * 100);
 
-  document.getElementById("end-title").textContent = game.title ? `${game.title} — complete!` : "Quiz complete!";
+  document.getElementById("end-title").textContent = game.title
+    ? t("quizCompleteTitled", { title: displayModeTitle(game.title) })
+    : t("quizCompleteGeneric");
   document.getElementById("end-found").textContent = `${correctCount} / ${game.total}`;
   document.getElementById("end-accuracy").textContent = `${accuracy}%`;
   document.getElementById("end-time").textContent = formatTime(elapsed);
@@ -690,13 +698,14 @@ function endQuiz() {
   const { better, best } = maybeSavePB(game.title, game.answerMode, { accuracy, timeMs: elapsed, date: Date.now() });
   const pbEl = document.getElementById("end-personal-best");
   if (better) {
-    pbEl.innerHTML = `<span class="pb-new">🏆 New personal best!</span> ${best.accuracy}% in ${formatTime(best.timeMs)}`;
+    pbEl.innerHTML = `<span class="pb-new">${t("pbNew", { pct: best.accuracy, time: formatTime(best.timeMs) })}</span>`;
   } else {
-    pbEl.textContent = `Personal best: ${best.accuracy}% in ${formatTime(best.timeMs)}`;
+    pbEl.textContent = t("pbExisting", { pct: best.accuracy, time: formatTime(best.timeMs) });
   }
 
   const list = document.getElementById("end-missed-list");
   list.innerHTML = "";
+  list.dataset.emptyText = t("perfectRun");
   list.classList.toggle("empty", game.missedIds.size === 0);
   [...game.missedIds]
     .map(id => game.displayNames[id])
@@ -738,22 +747,22 @@ function setupLeaderboardSubmit(title, answerMode, accuracy, timeMs) {
   btn.onclick = async () => {
     const name = nameInput.value.trim();
     if (!name) {
-      status.textContent = "Enter a name first";
+      status.textContent = t("enterNameFirst");
       status.className = "end-submit-status err";
       return;
     }
     btn.disabled = true;
-    status.textContent = "Submitting…";
+    status.textContent = t("submitting");
     localStorage.setItem("tlq_playerName", name);
     const res = await Leaderboard.submitScore({
       name, modeKey: title, answerMode, accuracy, timeMs,
       found: game.total - game.missedIds.size, total: game.total,
     });
     if (res.ok) {
-      status.textContent = "✓ Submitted!";
+      status.textContent = t("submitted");
       status.className = "end-submit-status ok";
     } else {
-      status.textContent = "Couldn't submit — try again";
+      status.textContent = t("submitFailed");
       status.className = "end-submit-status err";
       btn.disabled = false;
     }
@@ -765,19 +774,34 @@ function setupLeaderboardSubmit(title, answerMode, accuracy, timeMs) {
    ============================================================ */
 let leaderboardAnswerMode = "click";
 
+// `modeKey` (game.title) is a stable, always-English identifier used for
+// Firestore/localStorage storage and Play-Again matching — never shown to
+// the player and never translated, so switching languages doesn't
+// fragment existing leaderboard/personal-best data. This derives the
+// translated text actually shown on screen from that stable key.
+function displayModeTitle(modeKey) {
+  if (modeKey === "Whole Country") return t("modeTitleWholeCountry");
+  if (modeKey === "Administrative Posts") return t("modeTitleAdminPosts");
+  if (modeKey === "Municipalities") return t("modeTitleMunicipalities");
+  if (modeKey.endsWith(" sucos")) return `${modeKey.slice(0, -" sucos".length)} ${t("sucosWord")}`;
+  return modeKey;
+}
+
 function populateLeaderboardModeSelect() {
   const select = document.getElementById("leaderboard-mode-select");
+  const prevValue = select.value;
   select.innerHTML = "";
   const fixed = ["Municipalities", "Whole Country", "Administrative Posts"];
-  const muniTitles = [...DATA.munis]
+  const muniKeys = [...DATA.munis]
     .map(f => `${f.properties.name} sucos`)
     .sort((a, b) => a.localeCompare(b));
-  [...fixed, ...muniTitles].forEach(title => {
+  [...fixed, ...muniKeys].forEach(modeKey => {
     const opt = document.createElement("option");
-    opt.value = title;
-    opt.textContent = title;
+    opt.value = modeKey;
+    opt.textContent = displayModeTitle(modeKey);
     select.appendChild(opt);
   });
+  if (prevValue) select.value = prevValue;
 }
 
 function setLeaderboardAnswerMode(mode) {
@@ -844,8 +868,36 @@ function setColorScheme(mode) {
   }
   localStorage.setItem("tlq_colorScheme", mode);
   document.querySelectorAll(".theme-toggle-btn").forEach(btn => {
-    btn.textContent = mode === "dark" ? "☀ Light" : "🌙 Dark";
+    btn.textContent = mode === "dark" ? t("themeLight") : t("themeDark");
   });
+}
+
+/* ============================================================
+   Language (EN / PT / TET) toggle
+   ============================================================ */
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem("tlq_lang", lang);
+  applyStaticTranslations();
+  setColorScheme(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
+  populateLeaderboardModeSelect();
+
+  // Re-apply whatever dynamic text is currently on screen so a language
+  // switch mid-quiz or mid-results doesn't leave stale English behind.
+  if (game) {
+    if (game.ended) {
+      document.getElementById("end-title").textContent = game.title
+        ? t("quizCompleteTitled", { title: displayModeTitle(game.title) })
+        : t("quizCompleteGeneric");
+      document.getElementById("end-missed-list").dataset.emptyText = t("perfectRun");
+    } else {
+      document.getElementById("stat-misses").textContent = tCount("missCount", game.missClicks);
+      refreshPromptDisplay();
+    }
+  }
+  if (document.querySelector(".screen.active")?.id === "screen-leaderboard") {
+    loadLeaderboardList();
+  }
 }
 
 /* ============================================================
@@ -855,6 +907,11 @@ function wireUI() {
   setAnswerMode(currentAnswerMode);
   document.getElementById("toggle-click").addEventListener("click", () => setAnswerMode("click"));
   document.getElementById("toggle-type").addEventListener("click", () => setAnswerMode("type"));
+
+  applyStaticTranslations();
+  document.querySelectorAll(".lang-toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
+  });
 
   setColorScheme(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
   document.querySelectorAll(".theme-toggle-btn").forEach(btn => {
@@ -868,7 +925,7 @@ function wireUI() {
     startQuiz({
       features: DATA.munis,
       noGroup: true,
-      typePlaceholder: "Type a municipality…",
+      placeholderKey: "muni",
       title: "Municipalities",
     });
   });
@@ -879,10 +936,10 @@ function wireUI() {
       boundaryFeatures: DATA.munis,
       groupBy: { idKey: "post_id", nameKey: "post_name" },
       forceGroup: false,
-      groupUnitLabel: "Admin Post",
-      typePlaceholder: "Type a suco name…",
+      unitKey: "adminPost",
+      placeholderKey: "suco",
       contextKey: "post_name",
-      contextLabel: "Admin Post",
+      contextLabelKey: "adminPost",
       title: "Whole Country",
     });
   });
@@ -893,10 +950,10 @@ function wireUI() {
       boundaryFeatures: DATA.munis,
       groupBy: { idKey: "muni_id", nameKey: "muni_name" },
       forceGroup: false,
-      groupUnitLabel: "Municipality",
-      typePlaceholder: "Type an administrative post…",
+      unitKey: "municipality",
+      placeholderKey: "post",
       contextKey: "muni_name",
-      contextLabel: "Municipality",
+      contextLabelKey: "municipality",
       title: "Administrative Posts",
     });
   });
